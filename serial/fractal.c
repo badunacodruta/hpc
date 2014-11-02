@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <cstdlib>
 
-#define MaxIters 80
+#define MAX_ITERATIONS 80
 
 #define LEFT     -2.0
 #define RIGHT    1.0
@@ -13,34 +13,30 @@
 #define BOTTOM   -1.0
 
 int interpolate(int c1, int c2, double X){
-    int Z = c1 + ((c2 - c1) * X);
-    if(Z > 255 || Z<0){
-        //  printf("%d %d %f %d\n", c1,c2,X,Z);
-    }
     return c1 + ((c2 - c1) * X);
 }
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 
     //----------------------------------->>
     //       DECLARATIONS
     //----------------------------------->>
     
-    short   x, y, count, i;
+    int x, y;
+    double count;
+    int i, colorNo;
+    double colorPercent;
     long double zr, zi, cr, ci;
     long double rsquared, isquared;
 
-    int R, G, B;
-    double iteration = count;
-    int max_iteration = MaxIters;
+    int max_iterations = MAX_ITERATIONS;
     int *color1, *color2;
-    double nu, zn;
 
     FILE *f = NULL;
     int width = 0, height = 0;
 
-    int noCol;
+    int noCol = 1;
     long double left   = LEFT,
                 right  = RIGHT,
                 top    = TOP,
@@ -74,6 +70,10 @@ main(int argc, char *argv[])
             height = atoi(argv[i+1]);
         }
 
+		if (strcmp(argv[i], "--iterations") == 0 && i+1 < argc){
+            max_iterations = atoi(argv[i+1]);
+        }
+
         if (strcmp(argv[i], "--left") == 0 && i+1 < argc){
             left = strtold (argv[i+1], NULL);
         }
@@ -99,6 +99,32 @@ main(int argc, char *argv[])
         }
     }
 
+	if (left < LEFT){
+		printf("ERROR: The left start point is not valid. Left can't be lower than %f.\n", LEFT);
+		return 4;
+	}
+
+	if (right > RIGHT){
+		printf("ERROR: The right start point is not valid. Right can't be greather than %f.\n", RIGHT);
+		return 4;
+	}
+
+	if (top > TOP){
+		printf("ERROR: The top start point is not valid. Top can't be greather than %f.\n", TOP);
+		return 4;
+	}
+
+	if (bottom < BOTTOM){
+		printf("ERROR: The bottom start point is not valid. Bottom can't be lower than %f.\n", BOTTOM);
+		return 4;
+	}
+
+
+	if (max_iterations < 1){
+        printf("ERROR: The number of iterations must be greather than zero.\n");
+        return 3;
+    }
+
     if (width == 0 || height == 0){
         printf("ERROR: The size of the output image was not specified: ./main --height <INT> --width <INT>\n");
         return 2;
@@ -106,7 +132,7 @@ main(int argc, char *argv[])
 
     if (f == NULL){
         f = fopen("fractal.pgm", "w");
-        printf("WARNING: No specified output file. Using \"frctal.pgm\" as output file.\n");
+        printf("WARNING: No specified output file. Using \"fractal.pgm\" as output file.\n");
     }
 
     //----------------------------------->>
@@ -124,14 +150,14 @@ main(int argc, char *argv[])
         {
             zr = 0.0;
             zi = 0.0;
-            cr = LEFT + x * (right - left) / width;
+            cr = left + x * (right - left) / width;
 
-            ci = TOP + y * (bottom - top) / height;
+            ci = top + y * (bottom - top) / height;
             rsquared = zr * zr;
             isquared = zi * zi;
 
             for (count = 0; rsquared + isquared <= 4.0
-                            && count < MaxIters; count++)
+                            && count < max_iterations; count++)
             {
                 zi = zr * zi * 2;
                 zi += ci;
@@ -149,21 +175,23 @@ main(int argc, char *argv[])
             }
             // Else, if we are outside the fractal, we need to choose the gradient color.
             else{
-                iteration = count;
-                iteration = (iteration-1) / ((MaxIters)/(noCol-1));
-
-                color1 = palette[(int)floor(iteration)];
-                color2 = palette[(int)floor(iteration) + 1];
-              
-                if ( (int)floor(iteration) > 3 ){
-                    printf ("Boom \n");
-                    return 0;
+				if(noCol == 1){
+					color1  = palette[0];
+                	color2  = palette[0];
+                	colorPercent = 1.0;
+				}
+				else{
+					count = (count * (noCol-2.0)) / max_iterations;
+					colorNo = (int)floor(count);
+	                color1  = palette[colorNo];
+                	color2  = palette[colorNo+1];
+                	colorPercent = count / (floor(count) + 1);
                 }
 
                 fprintf (f, "%d %d %d ",
-                         interpolate(color1[0], color2[0], iteration - (int)iteration),
-                         interpolate(color1[1], color2[1], iteration - (int)iteration),
-                         interpolate(color1[2], color2[2], iteration - (int)iteration));
+                         interpolate(color1[0], color2[0], colorPercent),
+                         interpolate(color1[1], color2[1], colorPercent),
+                         interpolate(color1[2], color2[2], colorPercent) );
            }   
         }
 
