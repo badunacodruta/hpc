@@ -25,6 +25,10 @@ class Fractal {
             bottom = BOTTOM;
 			
 			map_percent = 0.1;
+			withThreads = false;
+			threadType = NONE;
+			runningMode = SIMPLE;
+			complexProcessSize = 32;
         }
 
     private:
@@ -32,8 +36,19 @@ class Fractal {
 		void mpiMap();
 		void master();
 		void slave();
+		void masterComplex();
+		void slaveComplex();
 		void mapMPIv1();
+		void mapMPIv2();
+		void printHelp();
+		int  processData(InputData mapData);
 
+		int complexProcessSize;
+
+		bool withThreads;
+		int threadType;
+		int runningMode;
+		
         int x, y;
         double count;
         int i, colorNo;
@@ -59,6 +74,8 @@ class Fractal {
 		int mpiSize;
 
 		vector<InputData> dataPool;
+		vector<InputData> jobsToProcess;
+		vector< vector<InputData> > jobs;
 		
 		MPI_Datatype InputDataType;
 };
