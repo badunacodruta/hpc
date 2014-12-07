@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include <stdio.h>
-#include <math.h>
+//#include <math.h>
 #include <string>
 #include <stdlib.h>
 #include <cstdlib>
@@ -16,6 +16,8 @@
 #include <vector>
 #include <algorithm>
 #include <omp.h>
+#include "cilk/cilk.h"
+#include "cilk/cilk_api.h"
 
 using namespace std;
 
@@ -474,14 +476,6 @@ void Fractal::slaveComplex(){
 		}
 
 		for (i = 0; i < hheight; i++) {
-
-			#pragma omp parallel shared(rgb, ff, i, wwriteMode, COLORS, nnoCol) private(j, zzr, zzi, ccr, cci, rrsquared, iisquared, ccolor1, ccolor2, ccolorPercent, ccount, ccolorNo)
-			{
-				/*if (omp_get_thread_num() == 0){
-					cout << "MPI Process: "<< mpiRank << " is using " << omp_get_num_threads() << " threads." << endl; 
-				}*/
-
-				#pragma omp for ordered
 				for (j = 0; j < wwidth; j++) {
 				
 					zzr = 0.0;
@@ -506,8 +500,7 @@ void Fractal::slaveComplex(){
 
 					// If we are inside the fractal we make the color black.
 					if (wwriteMode == ON_GOING){
-						#pragma omp ordered
-						{
+						
 							if (rrsquared + iisquared <= 4.0){
 								fprintf ( ff, "0 0 0 ");
 							}
@@ -521,10 +514,10 @@ void Fractal::slaveComplex(){
 								else {
 									ccount = (ccount * (nnoCol - 2.0)) / mmax_iterations;
 									//cout << " ---  "  << ccount << " " << nnoCol << " " << mmax_iterations << endl;
-									ccolorNo = (int) floor(ccount);
+									ccolorNo = (int) ccount;
 									ccolor1 = COLORS[ccolorNo];
 									ccolor2 = COLORS[ccolorNo + 1];
-									ccolorPercent = ccount / (floor(ccount) + 1);
+									ccolorPercent = ccount / ((int)(ccount) + 1);
 								}
 
 								fprintf ( ff, "%d %d %d ",
@@ -532,7 +525,7 @@ void Fractal::slaveComplex(){
 									interpolate(ccolor1[1], ccolor2[1], ccolorPercent),
 									interpolate(ccolor1[2], ccolor2[2], ccolorPercent));
 							}
-						}
+						
 					}
 					else {
 						if (rrsquared + iisquared <= 4.0) {
@@ -552,10 +545,10 @@ void Fractal::slaveComplex(){
 							else {
 								ccount = (ccount * (nnoCol - 2.0)) / mmax_iterations;
 								//cout << " ---  "  << ccount << " " << nnoCol << " " << mmax_iterations << endl;
-								ccolorNo = (int) floor(ccount);
+								ccolorNo = (int) (ccount);
 								ccolor1 = COLORS[ccolorNo];
 								ccolor2 = COLORS[ccolorNo + 1];
-								ccolorPercent = ccount / (floor(ccount) + 1);
+								ccolorPercent = ccount / ((int)(ccount) + 1);
 							}
 
 							RGB color;
@@ -566,9 +559,6 @@ void Fractal::slaveComplex(){
 						}
 					}
 				}
-
-//				#pragma omp barrier
-			}
 
 			if (writeMode == ON_GOING){
 				fprintf (ff, "\n");
@@ -678,10 +668,10 @@ void Fractal::slave(){
 						}
 						else {
 							count = (count * (noCol - 2.0)) / max_iterations;
-							colorNo = (int) floor(count);
+							colorNo = (int) (count);
 							color1 = COLORS[colorNo];
 							color2 = COLORS[colorNo + 1];
-							colorPercent = count / (floor(count) + 1);
+							colorPercent = count / ((int)(count) + 1);
 						}
 
 						fprintf ( f, "%d %d %d ",
